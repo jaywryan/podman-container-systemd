@@ -266,6 +266,15 @@
       state: "{{ fw_state }}"
     with_items: "{{ container_firewall_ports }}"
 
+  # - name: force restart after image change
+  #   debug: msg="image has changed"
+  #   changed_when: True
+  #   notify: restart service
+  #   when:
+  #     - container_image is defined
+  #     - pre_pull_id.stdout != post_pull_id.stdout
+  #     - pre_pull_id is succeeded
+
   - name: Force all notified handlers to run at this point
     meta: flush_handlers
 

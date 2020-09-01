@@ -12,6 +12,7 @@ User={{ container_run_as_user }}
 
 ExecStart=/usr/bin/podman run --name {{ container_name }} \
   {{ container_run_args }} \
+  -d --cgroups=no-conmon --replace \
   --conmon-pidfile  {{ pidfile }} --cidfile {{ cidfile }} \
   {{ container_image_list | first }} {% if container_cmd_args is defined %} \
   {{ container_cmd_args }} {% endif %}
