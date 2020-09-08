@@ -8,3 +8,5 @@ pidfile: "{{ cidpid_base }}pid"
 root_service_dir: '/etc/systemd/system'
 user_service_dir: "/home/{{ container_run_as_user }}/.config/systemd/user"
 service_files_dir: "{{ root_service_dir if container_run_as_user == 'root' else user_service_dir }}"
+service_scope: "{{ 'system' if container_run_as_user == 'root' else 'user' }}"
+
