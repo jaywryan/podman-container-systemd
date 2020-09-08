@@ -83,42 +83,32 @@
       group: root
     when: gid_has.changed and container_run_as_group != 'root'
 
-  - name: running single container, get image Id if it exists and we are root
-    command: "podman image inspect -f '{{ '{{' }}.Id{{ '}}' }}' {{ container_image }}"
-    changed_when: false
+  - name: running single container, pull image
     become: yes
     become_user: "{{ container_run_as_user }}"
-    register: pre_pull_id
-    ignore_errors: yes
+    podman_image:
+      name: "{{ container_image }}"
+      tag: "{{ container_image_tag | default(omit) }}"
+    register: podman_container
     when: container_image is defined
 
-  - name: running single container, ensure we have up to date container image
-    command: "podman pull {{ container_image }}"
-    become: yes
-    become_user: "{{ container_run_as_user }}"
-    when: container_image is defined
-
-  - name: running single container, get image Id if it exists
-    command: "podman image inspect -f '{{ '{{' }}.Id{{ '}}' }}'  {{ container_image }}"
-    changed_when: false
-    become: yes
-    become_user: "{{ container_run_as_user }}"
-    register: post_pull_id
-    when: container_image is defined
-
+  - name: debug podman_container
+    debug:
+      msg: "{{ podman_container }}"
   - name: force restart after image change
     debug: msg="image has changed"
     changed_when: True
     notify: restart service
     when:
       - container_image is defined
-      - pre_pull_id.stdout != post_pull_id.stdout
-      - pre_pull_id is succeeded
+      - podman_container.changed is true
 
   - name: seems we use several container images, ensure all are up to date
-    command: "podman pull {{ item }}"
     become: yes
     become_user: "{{ container_run_as_user }}"
+    podman_image:
+      name: "{{ container_image }}"
+      tag: "{{ container_image_tag }}"
     when: container_image_list is defined
     with_items: "{{ container_image_list }}"
 
@@ -157,18 +147,28 @@
       - start service
     register: service_file
     when: container_image_list is defined
+  
+  - name: debug service_file_before_template
+    debug:
+      msg: "{{ service_file_before_template }}"
+  - name: debug service_file
+    debug:
+      msg: "{{ service_file }}"
 
   - name: ensure "{{ service_name }}" is enabled at boot, and systemd reloaded
     become: yes
     become_user: "{{ container_run_as_user }}"
     systemd:
       name: "{{ service_name }}"
-      scope: "{{ 'system' if container_run_as_user == 'root' else 'user' }}"
+      scope: "{{ service_scope }}"
       enabled: yes
       daemon_reload: yes
 
   - name: ensure "{{ service_name }}" is running
-    service:
+    become: yes
+    become_user: "{{ container_run_as_user }}"
+    systemd:
+      scope: "{{ service_scope }}"
       name: "{{ service_name }}"
       state: started
     when: not service_file_before_template.stat.exists
@@ -204,7 +204,9 @@
 
   - name: ensure firewall service is running
     tags: firewall
-    service: name=firewalld state=started
+    systemd:
+      name: firewalld
+      state: started
 
   - name: ensure container's exposed ports firewall state
     tags: firewall
@@ -221,15 +223,11 @@
 - name: do cleanup stuff when container_state is "absent"
   block:
 
-  - name: ensure "{{ service_name }}" is disabled at boot
-    service:
-      name: "{{ service_name }}"
-      enabled: false
-    when:
-      - service_file_before_template.stat.exists
-
-  - name: ensure "{{ service_name }}" is stopped
-    service:
+  - name: ensure "{{ service_name }}" is disabled and stopped
+    become: yes
+    become_user: "{{ container_run_as_user }}"
+    systemd:
+      scope: "{{ service_scope }}"
       name: "{{ service_name }}"
       state: stopped
       enabled: no
