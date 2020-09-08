@@ -255,7 +255,9 @@
 
   - name: ensure firewall service is running
     tags: firewall
-    service: name=firewalld state=started
+    systemd:
+      name: firewalld
+      state: started
 
   - name: ensure container's exposed ports firewall state
     tags: firewall
