@@ -131,7 +131,9 @@
       owner: "{{ container_run_as_user }}"
       group: "{{ container_run_as_group }}"
       mode: 0644
-    notify: reload systemctl
+    notify: 
+      - reload systemctl
+      - restart service
     register: service_file
     when: container_image is defined
 
@@ -144,7 +146,7 @@
       mode: 0644
     notify:
       - reload systemctl
-      - start service
+      - restart service
     register: service_file
     when: container_image_list is defined
   

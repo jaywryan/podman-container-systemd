@@ -5,7 +5,7 @@
   become_user: "{{ container_run_as_user }}"
   systemd:
     scope: "{{ service_scope }}"
-    daemon_reload: yes
+    state: reloaded
 
 - name: start service
   become: yes
