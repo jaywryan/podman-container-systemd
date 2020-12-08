@@ -177,8 +177,8 @@
       mode: 0644
     notify:
       - reload systemctl
-      - start service
       - enable service
+      - restart service
     register: service_file
     when: container_image_list is defined and container_image_list | length == 1
 
@@ -191,8 +191,8 @@
       mode: 0644
     notify:
       - reload systemctl
-      - start service
       - enable service
+      - restart service
     register: service_file
     when: container_image_list is defined and container_image_list | length > 1
 
