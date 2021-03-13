@@ -17,7 +17,7 @@ ExecStart=/usr/bin/podman run --name {{ container_name }} \
 {{ container_run_args }} \
 {% endif %}
 {{ container_image_list | first }} {% if container_image_tag is defined %}:{{ container_image_tag}}{% endif %}
-{% if container_cmd_args is defined %}{{ container_cmd_args }}
+{% if container_cmd_args is defined %} {{ container_cmd_args }}
 {% endif %}
 
 ExecStop=/usr/bin/sh -c "/usr/bin/podman stop -t "{{ container_stop_timeout }}" `cat {{ cidfile }}`"
