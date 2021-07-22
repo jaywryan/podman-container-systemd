@@ -9,20 +9,16 @@ ExecStartPre=-/usr/bin/rm -f {{ pidfile }} {{ cidfile }}
 {% if container_run_as_user == 'root' %}
 User={{ container_run_as_user }}
 {% endif %}
-
 ExecStart=/usr/bin/podman run --name {{ container_name }} \
   -d --cgroups=no-conmon --replace \
   --conmon-pidfile  {{ pidfile }} --cidfile {{ cidfile }} \
-{% if container_run_args is defined %} \
+{% if container_run_args is defined %}
 {{ container_run_args }} \
 {% endif %}
-{{ container_image_list | first }}
-{% if container_cmd_args is defined %} \
-{{ container_cmd_args }}
-{% endif %}
+{{ container_image_list | first }}{% if container_cmd_args is defined %} {{ container_cmd_args }}{% endif %}
 
 ExecStop=/usr/bin/sh -c "/usr/bin/podman stop -t "{{ container_stop_timeout }}" `cat {{ cidfile }}`"
-ExecStop=/usr/bin/sh -c "/usr/bin/podman rm -f `cat {{ cidfile }}`"
+ExecStop=/usr/bin/sh -c "/usr/bin/podman rm -vf `cat {{ cidfile }}`"
 Restart={{ container_restart }}
 RestartSec={{ systemd_RestartSec }}
 KillMode=mixed
